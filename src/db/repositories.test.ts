@@ -168,6 +168,56 @@ describe("RawDocumentRepo", () => {
     expect(all.length).toBe(2);
   });
 
+  test("update modifies rawContent and metadata", () => {
+    const repo = createRawDocumentRepo(db);
+    const doc = makeRawDoc({ rawContent: "original", metadata: { x: 1 } });
+    repo.create(doc);
+
+    const updated = repo.update(doc.id, {
+      rawContent: "updated content",
+      metadata: { x: 2, y: 3 },
+    });
+    expect(updated).toBe(true);
+
+    const found = repo.getById(doc.id);
+    expect(found!.rawContent).toBe("updated content");
+    expect(found!.metadata).toEqual({ x: 2, y: 3 });
+  });
+
+  test("update with no content changes returns false", () => {
+    const repo = createRawDocumentRepo(db);
+    expect(repo.update("any", {})).toBe(false);
+  });
+
+  test("createOrUpdate inserts new when not exists", () => {
+    const repo = createRawDocumentRepo(db);
+    const doc = makeRawDoc({ source: "hacker_news", externalId: "hn-1" });
+    repo.createOrUpdate(doc);
+
+    const found = repo.getBySourceAndExternalId("hacker_news", "hn-1");
+    expect(found).not.toBeNull();
+    expect(found!.rawContent).toBe(doc.rawContent);
+  });
+
+  test("createOrUpdate updates existing by source+externalId", () => {
+    const repo = createRawDocumentRepo(db);
+    const original = makeRawDoc({ source: "hacker_news", externalId: "hn-1", rawContent: "v1" });
+    repo.create(original);
+
+    const updated = makeRawDoc({
+      id: crypto.randomUUID(),
+      source: "hacker_news",
+      externalId: "hn-1",
+      rawContent: "v2",
+    });
+    repo.createOrUpdate(updated);
+
+    const found = repo.getBySourceAndExternalId("hacker_news", "hn-1");
+    expect(found).not.toBeNull();
+    expect(found!.rawContent).toBe("v2");
+    expect(found!.id).toBe(original.id);
+  });
+
   test("deleteById removes document", () => {
     const repo = createRawDocumentRepo(db);
     const doc = makeRawDoc();

@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "collect": "bun run src/commands/collect.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

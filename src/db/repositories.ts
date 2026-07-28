@@ -92,6 +92,38 @@ export function createRawDocumentRepo(db: Database) {
         .map(toRawDocument);
     },
 
+    update(id: string, updates: Partial<Pick<RawDocument, "rawContent" | "metadata">>): boolean {
+      const set: Record<string, unknown> = {};
+      if (updates.rawContent !== undefined) set.rawContent = updates.rawContent;
+      if (updates.metadata !== undefined) set.metadata = json(updates.metadata);
+      set.collectedAt = new Date().toISOString();
+
+      if (Object.keys(set).length <= 1) return false;
+
+      const result = d
+        .update(schema.rawDocuments)
+        .set(set)
+        .where(eq(schema.rawDocuments.id, id))
+        .run();
+      return changed(result);
+    },
+
+    createOrUpdate(doc: RawDocument): void {
+      const existing = this.getBySourceAndExternalId(doc.source, doc.externalId);
+      if (existing) {
+        d.update(schema.rawDocuments)
+          .set({
+            rawContent: doc.rawContent,
+            metadata: json(doc.metadata),
+            collectedAt: doc.collectedAt.toISOString(),
+          })
+          .where(eq(schema.rawDocuments.id, existing.id))
+          .run();
+      } else {
+        this.create(doc);
+      }
+    },
+
     deleteById(id: string): boolean {
       const result = d
         .delete(schema.rawDocuments)
@@ -173,13 +205,17 @@ export function createDocumentRepo(db: Database) {
         .map(toDocument);
     },
 
-    update(id: string, updates: Partial<Pick<Document, "title" | "body" | "sentiment" | "buyingSignals" | "persona">>): boolean {
+    update(id: string, updates: Partial<Pick<Document, "title" | "body" | "sentiment" | "buyingSignals" | "persona" | "authorName" | "postedAt" | "url">>): boolean {
       const set: Record<string, unknown> = {};
       if (updates.title !== undefined) set.title = updates.title;
       if (updates.body !== undefined) set.body = updates.body;
       if (updates.sentiment !== undefined) set.sentiment = updates.sentiment;
       if (updates.buyingSignals !== undefined) set.buyingSignals = json(updates.buyingSignals);
       if (updates.persona !== undefined) set.persona = json(updates.persona);
+      if (updates.authorName !== undefined) set.authorName = updates.authorName;
+      if (updates.postedAt !== undefined) set.postedAt = updates.postedAt.toISOString();
+      if (updates.url !== undefined) set.url = updates.url;
+      set.normalizedAt = new Date().toISOString();
 
       if (Object.keys(set).length === 0) return false;
 
