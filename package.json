@@ -6,7 +6,8 @@
   "scripts": {
     "test": "bun test",
     "collect": "bun run src/commands/collect.ts",
-    "classify": "bun run src/commands/classify.ts"
+    "classify": "bun run src/commands/classify.ts",
+    "cluster": "bun run src/commands/cluster.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
