@@ -1,7 +1,5 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { drizzle } from "drizzle-orm/bun-sqlite";
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import {
   createRawDocumentRepo,
   createDocumentRepo,
@@ -24,18 +22,7 @@ import type {
   Persona,
   TargetMarket,
 } from "@/types/domain.ts";
-
-function makeDb(): Database {
-  const db = new Database(":memory:");
-  db.run("PRAGMA foreign_keys = ON");
-  const d = drizzle(db);
-  migrate(d, { migrationsFolder: "./src/db/migrations" });
-  return db;
-}
-
-function makeId(): string {
-  return crypto.randomUUID();
-}
+import { makeDb, makeId } from "@/db/test-utils.ts";
 
 const now = new Date();
 
@@ -329,6 +316,15 @@ describe("EvidenceRepo", () => {
     expect(repo.listByDocumentId("nonexistent").length).toBe(0);
   });
 
+  test("list returns all evidence", () => {
+    const repo = createEvidenceRepo(db);
+    repo.create(makeEvidence({ documentId: docId, excerpt: "a" }));
+    repo.create(makeEvidence({ documentId: docId, excerpt: "b" }));
+
+    const all = repo.list();
+    expect(all.length).toBe(2);
+  });
+
   test("deleteById removes evidence", () => {
     const repo = createEvidenceRepo(db);
     const ev = makeEvidence({ documentId: docId });
@@ -391,6 +387,27 @@ describe("PainRepo", () => {
     repo.create(makePain({ clusterId: null }));
 
     expect(repo.listUnclustered().length).toBe(2);
+  });
+
+  test("update modifies pain fields", () => {
+    const repo = createPainRepo(db);
+    const pain = makePain({ description: "original", severity: "low" });
+    repo.create(pain);
+
+    const updated = repo.update(pain.id, {
+      description: "updated description",
+      severity: "critical",
+    });
+    expect(updated).toBe(true);
+
+    const found = repo.getById(pain.id);
+    expect(found!.description).toBe("updated description");
+    expect(found!.severity).toBe("critical");
+  });
+
+  test("update with empty updates returns false", () => {
+    const repo = createPainRepo(db);
+    expect(repo.update("any", {})).toBe(false);
   });
 
   test("updateClusterId moves pain to cluster", () => {

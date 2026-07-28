@@ -240,6 +240,15 @@ export function createEvidenceRepo(db: Database) {
       return row ? toEvidence(row) : null;
     },
 
+    list(): Evidence[] {
+      return d
+        .select()
+        .from(schema.evidence)
+        .orderBy(asc(schema.evidence.charOffset))
+        .all()
+        .map(toEvidence);
+    },
+
     listByDocumentId(documentId: string): Evidence[] {
       return d
         .select()
@@ -326,6 +335,23 @@ export function createPainRepo(db: Database) {
         .where(isNull(schema.pains.clusterId))
         .all()
         .map(toPain);
+    },
+
+    update(id: string, updates: Partial<Pick<Pain, "description" | "severity" | "targetMarket" | "evidenceIds">>): boolean {
+      const set: Record<string, unknown> = {};
+      if (updates.description !== undefined) set.description = updates.description;
+      if (updates.severity !== undefined) set.severity = updates.severity;
+      if (updates.targetMarket !== undefined) set.targetMarket = json(updates.targetMarket);
+      if (updates.evidenceIds !== undefined) set.evidenceIds = json(updates.evidenceIds);
+
+      if (Object.keys(set).length === 0) return false;
+
+      const result = d
+        .update(schema.pains)
+        .set(set)
+        .where(eq(schema.pains.id, id))
+        .run();
+      return changed(result);
     },
 
     updateClusterId(painId: string, clusterId: string | null): boolean {
