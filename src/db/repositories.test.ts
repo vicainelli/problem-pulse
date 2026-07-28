@@ -29,7 +29,7 @@ function makeDb(): Database {
   const db = new Database(":memory:");
   db.run("PRAGMA foreign_keys = ON");
   const d = drizzle(db);
-  migrate(d, { migrationsFolder: "./db/migrations" });
+  migrate(d, { migrationsFolder: "./src/db/migrations" });
   return db;
 }
 

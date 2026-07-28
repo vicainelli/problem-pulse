@@ -7,7 +7,7 @@ function makeDb(): Database {
   const db = new Database(":memory:");
   db.run("PRAGMA foreign_keys = ON");
   const d = drizzle(db);
-  migrate(d, { migrationsFolder: "./db/migrations" });
+  migrate(d, { migrationsFolder: "./src/db/migrations" });
   return db;
 }
 
@@ -38,7 +38,7 @@ describe("Schema", () => {
   test("migrations are idempotent", () => {
     const db = makeDb();
     const d = drizzle(db);
-    migrate(d, { migrationsFolder: "./db/migrations" });
+    migrate(d, { migrationsFolder: "./src/db/migrations" });
     const rows = db.query("SELECT * FROM __drizzle_migrations").all() as { hash: string }[];
     expect(rows.length).toBe(1);
   });
