@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "test": "bun test",
-    "collect": "bun run src/commands/collect.ts"
+    "collect": "bun run src/commands/collect.ts",
+    "classify": "bun run src/commands/classify.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

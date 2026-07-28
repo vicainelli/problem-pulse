@@ -205,6 +205,17 @@ export function createDocumentRepo(db: Database) {
         .map(toDocument);
     },
 
+    listUnclassified(): Document[] {
+      const rows = d
+        .select({ documents: schema.documents })
+        .from(schema.documents)
+        .leftJoin(schema.evidence, eq(schema.documents.id, schema.evidence.documentId))
+        .where(isNull(schema.evidence.id))
+        .orderBy(desc(schema.documents.normalizedAt))
+        .all();
+      return rows.map((row) => toDocument(row.documents));
+    },
+
     update(id: string, updates: Partial<Pick<Document, "title" | "body" | "sentiment" | "buyingSignals" | "persona" | "authorName" | "postedAt" | "url">>): boolean {
       const set: Record<string, unknown> = {};
       if (updates.title !== undefined) set.title = updates.title;
@@ -293,6 +304,14 @@ export function createEvidenceRepo(db: Database) {
         .orderBy(asc(schema.evidence.charOffset))
         .all()
         .map(toEvidence);
+    },
+
+    deleteByDocumentId(documentId: string): number {
+      const result = d
+        .delete(schema.evidence)
+        .where(eq(schema.evidence.documentId, documentId))
+        .run();
+      return (result as unknown as { changes: number }).changes;
     },
 
     deleteById(id: string): boolean {
